@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Diário do Vale">
+    <title>Diário do Vale - Stardew Companion</title>
+    <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/oran-berry.png">
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-parchment: #FCE4B3;
+            --bg-parchment-dark: #F1C987;
+            --border-outer: #552811;
+            --border-mid: #B45C27;
+            --border-inner: #DF8E44;
+            --text-main: #431E09;
+            --text-muted: #7C441F;
+            --accent-green: #388E3C;
+            --accent-red: #D32F2F;
+            --season-bg: #7BB661; /* Primavera padrão */
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--season-bg);
+            background-image: radial-gradient(rgba(255,255,255,0.18) 2px, transparent 2px);
+            background-size: 24px 24px;
+            font-family: 'Nunito', sans-serif;
+            color: var(--text-main);
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: calc(82px + env(safe-area-inset-bottom));
+            transition: background-color 0.4s ease;
+        }
+
+        h1, h2, h3, .pixel-font {
+            font-family: 'VT323', monospace;
+            letter-spacing: 0.5px;
+            margin: 0;
+        }
+
+        /* Estilo de Moldura Original do Stardew Valley */
+        .sdv-box {
+            background-color: var(--bg-parchment);
+            border: 4px solid var(--border-outer);
+            box-shadow: 
+                inset 0 0 0 3px var(--border-inner),
+                inset 0 0 0 6px var(--border-mid),
+                0 6px 0 rgba(0,0,0,0.22);
+            border-radius: 6px;
+            padding: 14px;
+            margin-bottom: 14px;
+        }
+
+        .sdv-card {
+            background-color: var(--bg-parchment-dark);
+            border: 2px solid var(--border-mid);
+            border-radius: 6px;
+            padding: 10px 12px;
+            margin-bottom: 10px;
+        }
+
+        /* Cabeçalho e Controle de Data */
+        header {
+            padding: 12px 14px 4px 14px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .title-area h1 {
+            font-size: 28px;
+            color: var(--border-outer);
+            text-shadow: 1px 1px 0px #FFF;
+        }
+
+        .date-controls {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            width: 100%;
+            margin-top: 8px;
+        }
+
+        select, input[type="text"], .sdv-btn {
+            background-color: var(--bg-parchment-dark);
+            border: 2px solid var(--border-outer);
+            border-radius: 4px;
+            padding: 6px 10px;
+            color: var(--text-main);
+            font-family: 'Nunito', sans-serif;
+            font-weight: 800;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .sdv-btn {
+            cursor: pointer;
+            background-color: var(--border-inner);
+            color: #fff;
+            text-shadow: 1px 1px 0 var(--border-outer);
+            box-shadow: 0 2px 0 var(--border-outer);
+        }
+
+        .sdv-btn:active {
+            transform: translateY(2px);
+            box-shadow: none;
+        }
+
+        main {
+            padding: 0 14px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .search-bar {
+            width: 100%;
+            margin-bottom: 12px;
+            background-color: #FFF6E5;
+        }
+
+        /* Tags e Badges */
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 800;
+            background: var(--border-outer);
+            color: #FFF;
+            margin-right: 4px;
+            margin-top: 4px;
+        }
+
+        .badge.love { background: #C2185B; }
+        .badge.like { background: #388E3C; }
+        .badge.season { background: #1976D2; }
+        .badge.gold { background: #D48806; }
+
+        /* Checklists */
+        .check-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px;
+            border-bottom: 1px dashed var(--border-mid);
+            cursor: pointer;
+        }
+        .check-item:last-child { border-bottom: none; }
+        .check-item.done {
+            opacity: 0.55;
+            text-decoration: line-through;
+        }
+
+        .checkbox-ui {
+            width: 24px;
+            height: 24px;
+            border: 3px solid var(--border-outer);
+            background: #FFF6E5;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            color: var(--accent-green);
+            flex-shrink: 0;
+        }
+
+        /* Barra de Progresso */
+        .progress-bar {
+            width: 100%;
+            height: 16px;
+            background: #FFF6E5;
+            border: 2px solid var(--border-outer);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 8px 0 12px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: var(--accent-green);
+            transition: width 0.3s ease;
+        }
+
+        /* Navegação Inferior estilo Inventário */
+        nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: var(--bg-parchment);
+            border-top: 4px solid var(--border-outer);
+            box-shadow: inset 0 3px 0 var(--border-inner);
+            display: flex;
+            justify-content: space-around;
+            padding: 6px 4px calc(6px + env(safe-area-inset-bottom)) 4px;
+            z-index: 20;
+        }
+
+        .nav-btn {
+            background: none;
+            border: 2px solid transparent;
+            border-radius: 6px;
+            padding: 6px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--text-muted);
+            font-family: 'VT323', monospace;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .nav-btn span.icon { font-size: 22px; margin-bottom: 2px; }
+        .nav-btn.active {
+            background-color: var(--bg-parchment-dark);
+            border-color: var(--border-outer);
+            color: var(--border-outer);
+            transform: translateY(-2px);
+        }
+
+        .tab-section { display: none; }
+        .tab-section.active { display: block; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="sdv-box" style="margin-bottom: 8px; padding: 10px 12px;">
+            <div class="top-bar">
+                <div class="title-area">
+                    <h1>🌾 DIÁRIO DO VALE</h1>
+                </div>
+                <button class="sdv-btn" onclick="nextDay()">Dormir (+1 Dia) 💤</button>
+            </div>
+            <div class="date-controls">
+                <select id="seasonSelect" onchange="updateDateState()">
+                    <option value="Primavera">🌸 Primavera</option>
+                    <option value="Verão">☀️ Verão</option>
+                    <option value="Outono">🍂 Outono</option>
+                    <option value="Inverno">❄️ Inverno</option>
+                </select>
+                <select id="daySelect" onchange="updateDateState()"></select>
+                <select id="weatherSelect" onchange="updateDateState()">
+                    <option value="Sol">☀️ Sol</option>
+                    <option value="Chuva">🌧️ Chuva</option>
+                </select>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- ABA 1: HOJE NO VALE -->
+        <section id="tab-hoje" class="tab-section active">
+            <div class="sdv-box">
+                <h2 class="pixel-font" style="font-size: 24px; margin-bottom: 8px;">📅 Resumo do Dia</h2>
+                <div id="today-summary"></div>
+            </div>
+
+            <div class="sdv-box">
+                <h2 class="pixel-font" style="font-size: 24px; margin-bottom: 8px;">📝 Afazeres da Fazenda</h2>
+                <div id="daily-tasks"></div>
+            </div>
+        </section>
+
+        <!-- ABA 2: ALDEÕES -->
+        <section id="tab-npcs" class="tab-section">
+            <div class="sdv-box">
+                <h2 class="pixel-font" style="font-size: 24px; margin-bottom: 8px;">🎁 Guia de Aldeões & Presentes</h2>
+                <input type="text" id="npcSearch" class="search-bar" placeholder="Buscar aldeão ou presente..." oninput="renderNPCs()">
+                <div id="npc-list"></div>
+            </div>
+        </section>
+
+        <!-- ABA 3: CENTRO COMUNITÁRIO -->
+        <section id="tab-cc" class="tab-section">
+            <div class="sdv-box">
+                <h2 class="pixel-font" style="font-size: 24px;">🏛️ Centro Comunitário</h2>
+                <div class="progress-bar"><div id="cc-progress" class="progress-fill" style="width: 0%"></div></div>
+                <div id="cc-percentage" style="font-size: 13px; font-weight: 800; margin-bottom: 10px; text-align: right;">0% Completo</div>
+                <div id="cc-list"></div>
+            </div>
+        </section>
+
+        <!-- ABA 4: PESCA -->
+        <section id="tab-pesca" class="tab-section">
+            <div class="sdv-box">
+                <h2 class="pixel-font" style="font-size: 24px; margin-bottom: 8px;">🎣 Radar de Pesca</h2>
+                <div style="display:flex; gap:8px; margin-bottom:10px;">
+                    <button class="sdv-btn" style="flex:1" onclick="setFishFilter('now')">Pescar Hoje</button>
+                    <button class="sdv-btn" style="flex:1; background:#8D6E63;" onclick="setFishFilter('all')">Ver Todos</button>
+                </div>
+                <input type="text" id="fishSearch" class="search-bar" placeholder="Buscar peixe ou local (Rio, Mar...)" oninput="renderFish()">
+                <div id="fish-list"></div>
+            </div>
+        </section>
+
+        <!-- ABA 5: LAVOURAS -->
+        <section id="tab-lavouras" class="tab-section">
+            <div class="sdv-box">
+                <h2 class="pixel-font" style="font-size: 24px; margin-bottom: 8px;">🌱 Calculadora de Plantio</h2>
+                <p style="font-size: 13px; margin-top:0; color: var(--text-muted);">Mostrando sementes da estação selecionada e se ainda dá tempo de colher antes do dia 28.</p>
+                <div id="crops-list"></div>
+            </div>
+        </section>
+    </main>
+
+    <nav>
+        <button class="nav-btn active" onclick="switchTab('hoje', this)"><span class="icon">🏠</span>Hoje</button>
+        <button class="nav-btn" onclick="switchTab('npcs', this)"><span class="icon">❤️</span>Aldeões</button>
+        <button class="nav-btn" onclick="switchTab('cc', this)"><span class="icon">📜</span>Centro</button>
+        <button class="nav-btn" onclick="switchTab('pesca', this)"><span class="icon">🎣</span>Pesca</button>
+        <button class="nav-btn" onclick="switchTab('lavouras', this)"><span class="icon">🥕</span>Plantio</button>
+    </nav>
+
+<script>
+// ================= BANCO DE DADOS INTERNO (OFFLINE) =================
+const DB = {
+    seasonColors: {
+        "Primavera": "#689F38",
+        "Verão": "#FBC02D",
+        "Outono": "#D84315",
+        "Inverno": "#0288D1"
+    },
+    festivals: {
+        "Primavera-13": "🥚 Festival do Ovo (Praça, 9h-14h) - Compre Sementes de Morango!",
+        "Primavera-24": "💃 Dança das Flores (Floresta Cinzaseiva, 9h-14h)",
+        "Verão-11": "🍲 Luau (Praia, 9h-14h) - Leve um item de qualidade Ouro/Irídio para a sopa!",
+        "Verão-28": "🪼 Dança das Medusas da Noite (Praia, 22h-00h)",
+        "Outono-16": "🎡 Feira de Stardew Valley (Praça, 9h-15h) - Leve 9 itens para a exposição!",
+        "Outono-27": "🎃 Véspera dos Espíritos (Praça, 22h-23h50) - Pegue a Abóbora Dourada!",
+        "Inverno-8": "🧊 Festival do Gelo (Floresta, 9h-14h)",
+        "Inverno-15": "🦑 Mercado Noturno (Praia, 17h-02h) - Dias 15, 16 e 17",
+        "Inverno-25": "🎄 Festa da Estrela de Inverno (Praça, 9h-14h)"
+    },
+    npcs: [
+        { name: "Abigail", bday: "Outono-13", loves: ["Ametista", "Abóbora", "Baiacu", "Bolo de Chocolate"], schedule: "Manhã na loja do Pierre; tarde na ponte ou montanha. Chuva: Cemitério ou Mina." },
+        { name: "Alex", bday: "Verão-13", loves: ["Café da Manhã Completo", "Jantar de Salmão"], schedule: "Embaixo da árvore perto de casa ou na praia no Verão." },
+        { name: "Elliott", bday: "Outono-5", loves: ["Pena de Pato", "Lagosta", "Romã", "Bolo de Caranguejo"], schedule: "Cabana na Praia (manhã), ponte ou Saloon às sextas." },
+        { name: "Emily", bday: "Primavera-27", loves: ["Ametista", "Esmeralda", "Rubi", "Tecido", "Lã"], schedule: "Em casa pela manhã; trabalha no Saloon a partir das 15h30." },
+        { name: "Haley", bday: "Primavera-14", loves: ["Coco", "Girassol", "Salada de Frutas", "Bolo Rosa"], schedule: "Fonte da cidade à tarde ou na praia no Verão." },
+        { name: "Harvey", bday: "Inverno-14", loves: ["Café", "Picles", "Vinho", "Óleo de Trufa"], schedule: "Clínica até as 15h; depois caminha pela praça." },
+        { name: "Leah", bday: "Inverno-23", loves: ["Salada", "Queijo de Cabra", "Vinho", "Trufa"], schedule: "Esculpindo na cabana pela manhã; rio ou Saloon à noite." },
+        { name: "Maru", bday: "Verão-10", loves: ["Bateria", "Barra de Ouro", "Morango", "Couve-flor", "Diamante"], schedule: "Carpintaria, Clínica (Ter/Qui) ou banco perto do Centro Comunitário." },
+        { name: "Penny", bday: "Outono-2", loves: ["Melão", "Diamante", "Esmeralda", "Papoula", "Prato de Raízes"], schedule: "Museu com as crianças ou lendo embaixo da árvore perto do rio." },
+        { name: "Sam", bday: "Verão-17", loves: ["Fruto do Cacto", "Pizza", "Olho de Tigre"], schedule: "Em casa tocando guitarra, andando de skate ou trabalhando no Museu." },
+        { name: "Sebastian", bday: "Inverno-10", loves: ["Lágrima Congelada", "Sashimi", "Ovo Nulo", "Obsidiana"], schedule: "Quarto no porão até 15h; fuma perto do lago à noite ou vai ao Píer na chuva." },
+        { name: "Shane", bday: "Primavera-20", loves: ["Pimenta Quente", "Pizza", "Cerveja"], schedule: "Rancho da Marnie pela manhã; Mercado Joja; Saloon todas as noites." },
+        { name: "Krobus", bday: "Inverno-1", loves: ["Diamante", "Abóbora", "Ovo Nulo", "Maionese Nula", "Raiz-forte"], schedule: "Nos Esgotos todos os dias o dia todo." },
+        { name: "Feiticeiro (Rasmodius)", bday: "Inverno-17", loves: ["Essência Nula", "Essência Solar", "Cogumelo Roxo"], schedule: "Torre do Feiticeiro (Oeste da Floresta) das 6h às 23h." },
+        { name: "Linus", bday: "Inverno-3", loves: ["Inhame", "Coco", "Fruto do Cacto", "Prato do Mar"], schedule: "Ao redor de sua tenda na Montanha ou perto do Spa." },
+        { name: "Robin", bday: "Outono-21", loves: ["Queijo de Cabra", "Pêssego", "Espaguete"], schedule: "Carpintaria na Montanha das 9h às 17h (fecha às terças)." }
+    ],
+    bundles: [
+        { room: "Copa (Estufa)", name: "Plantas da Primavera", items: ["Chirívia (Primavera)", "Vagem (Primavera)", "Couve-flor (Primavera)", "Batata (Primavera)"] },
+        { room: "Copa (Estufa)", name: "Plantas do Verão", items: ["Tomate (Verão)", "Pimenta Quente (Verão)", "Mirtilo (Verão)", "Melão (Verão)"] },
+        { room: "Copa (Estufa)", name: "Plantas do Outono", items: ["Milho (Verão/Outono)", "Berinjela (Outono)", "Abóbora (Outono)", "Inhame (Outono)"] },
+        { room: "Copa (Estufa)", name: "Plantas de Qualidade", items: ["5x Chirívia Ouro", "5x Melão Ouro", "5x Abóbora Ouro", "5x Milho Ouro"] },
+        { room: "Aquário", name: "Peixes de Rio", items: ["Peixe-sol (Rio, Sol)", "Bagre (Rio, Chuva)", "Alosa (Rio, Chuva)", "Truta Tigre (Rio, Out/Inv)"] },
+        { room: "Aquário", name: "Peixes de Lago", items: ["Achigã (Lago Montanha)", "Carpa (Lago)", "Peixe-gato (Lago)", "Esturjão (Lago, Verão/Inv)"] },
+        { room: "Aquário", name: "Peixes Noturnos", items: ["Picão-verde (Rio, Chuva, 16h+)", "Brema (Rio, 18h+)", "Enguia (Mar, Pri/Out, Chuva, 16h+)"] },
+        { room: "Sala de Artesanato", name: "Coleta da Primavera", items: ["Raiz-forte", "Narciso", "Alho-poró", "Dente-de-leão"] },
+        { room: "Sala da Caldeira", name: "Ferreiro & Geólogo", items: ["Barra de Cobre", "Barra de Ferro", "Barra de Ouro", "Quartzo", "Cristal da Terra", "Lágrima Congelada", "Quartzo de Fogo"] }
+    ],
+    fish: [
+        { name: "Bagre", loc: "Rio / Floresta", time: "6h - 0h", seasons: ["Primavera", "Outono"], weather: "Chuva", price: "200g" },
+        { name: "Enguia", loc: "Oceano", time: "16h - 2h", seasons: ["Primavera", "Outono"], weather: "Chuva", price: "85g" },
+        { name: "Baiacu", loc: "Oceano", time: "12h - 16h", seasons: ["Verão"], weather: "Sol", price: "200g" },
+        { name: "Superpepino", loc: "Oceano", time: "18h - 2h", seasons: ["Verão", "Outono"], weather: "Qualquer", price: "250g" },
+        { name: "Esturjão", loc: "Lago da Montanha", time: "6h - 19h", seasons: ["Verão", "Inverno"], weather: "Qualquer", price: "200g" },
+        { name: "Picão-verde", loc: "Rio / Lago", time: "12h - 2h", seasons: ["Outono", "Inverno"], weather: "Chuva", price: "105g" },
+        { name: "Truta Tigre", loc: "Rio", time: "6h - 19h", seasons: ["Outono", "Inverno"], weather: "Qualquer", price: "150g" },
+        { name: "Peixe-sol", loc: "Rio", time: "6h - 19h", seasons: ["Primavera", "Verão"], weather: "Sol", price: "30g" },
+        { name: "Polvo", loc: "Oceano", time: "6h - 13h", seasons: ["Verão"], weather: "Qualquer", price: "150g" },
+        { name: "Lula", loc: "Oceano", time: "18h - 2h", seasons: ["Inverno"], weather: "Qualquer", price: "80g" }
+    ],
+    crops: [
+        { name: "Chirívia", season: "Primavera", days: 4, regrow: 0, profit: "35g" },
+        { name: "Couve-flor", season: "Primavera", days: 12, regrow: 0, profit: "175g (Pode virar Gigante)" },
+        { name: "Morango", season: "Primavera", days: 8, regrow: 4, profit: "120g (Compre no dia 13)" },
+        { name: "Batata", season: "Primavera", days: 6, regrow: 0, profit: "80g (+chance de extra)" },
+        { name: "Mirtilo", season: "Verão", days: 13, regrow: 4, profit: "3x 50g por colheita" },
+        { name: "Melão", season: "Verão", days: 12, regrow: 0, profit: "250g (Pode virar Gigante)" },
+        { name: "Carambola", season: "Verão", days: 13, regrow: 0, profit: "750g (Excelente para Vinho)" },
+        { name: "Pimenta Quente", season: "Verão", days: 5, regrow: 3, profit: "40g" },
+        { name: "Oxicoco", season: "Outono", days: 7, regrow: 5, profit: "2x 75g por colheita" },
+        { name: "Abóbora", season: "Outono", days: 13, regrow: 0, profit: "320g (Pode virar Gigante)" },
+        { name: "Berinjela", season: "Outono", days: 5, regrow: 5, profit: "60g" },
+        { name: " Sementes de Inverno", season: "Inverno", days: 7, regrow: 0, profit: "Coleta de Inverno" }
+    ]
+};
+
+// ================= ESTADO DO JOGADOR (LOCALSTORAGE) =================
+let state = JSON.parse(localStorage.getItem('sdv_companion_state')) || {
+    season: "Primavera",
+    day: 1,
+    weather: "Sol",
+    ccDone: {},
+    dailyTasks: {
+        "Regar lavouras / conferir estufa": false,
+        "Fazer carinho nos animais": false,
+        "Ver a Sorte na TV e Rainha do Molho": false,
+        "Checar Caverna de Morcegos / Cogumelos": false
+    }
+};
+
+let fishFilterMode = 'now';
+
+function saveState() {
+    localStorage.setItem('sdv_companion_state', JSON.stringify(state));
+}
+
+// Inicializar seletor de dias (1 a 28)
+const daySelect = document.getElementById('daySelect');
+for (let i = 1; i <= 28; i++) {
+    let opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = `Dia ${i}`;
+    daySelect.appendChild(opt);
+}
+
+// ================= FUNÇÕES DE ATUALIZAÇÃO =================
+function init() {
+    document.getElementById('seasonSelect').value = state.season;
+    document.getElementById('daySelect').value = state.day;
+    document.getElementById('weatherSelect').value = state.weather;
+    applyTheme();
+    renderAll();
+}
+
+function applyTheme() {
+    document.documentElement.style.setProperty('--season-bg', DB.seasonColors[state.season]);
+}
+
+function updateDateState() {
+    state.season = document.getElementById('seasonSelect').value;
+    state.day = parseInt(document.getElementById('daySelect').value);
+    state.weather = document.getElementById('weatherSelect').value;
+    saveState();
+    applyTheme();
+    renderAll();
+}
+
+function nextDay() {
+    if (state.day < 28) {
+        state.day++;
+    } else {
+        state.day = 1;
+        const order = ["Primavera", "Verão", "Outono", "Inverno"];
+        state.season = order[(order.indexOf(state.season) + 1) % 4];
+    }
+    // Resetar tarefas diárias ao dormir
+    Object.keys(state.dailyTasks).forEach(k => state.dailyTasks[k] = false);
+    document.getElementById('seasonSelect').value = state.season;
+    document.getElementById('daySelect').value = state.day;
+    saveState();
+    applyTheme();
+    renderAll();
+}
+
+function renderAll() {
+    renderToday();
+    renderNPCs();
+    renderCC();
+    renderFish();
+    renderCrops();
+}
+
+// ABA 1: HOJE
+function renderToday() {
+    const key = `${state.season}-${state.day}`;
+    const bdays = DB.npcs.filter(n => n.bday === key);
+    const fest = DB.festivals[key];
+    const isTravellingCart = (state.day % 7 === 5 || state.day % 7 === 0); // Sexta e Domingo
+    const isQueenOfSauce = (state.day % 7 === 0 || state.day % 7 === 3); // Domingo e Quarta
+
+    let html = '';
+
+    if (bdays.length > 0) {
+        bdays.forEach(n => {
+            html += `<div class="sdv-card">🎂 <strong>Aniversário de ${n.name}!</strong> (8x pontos de amizade)<br>
+            <span class="badge love">Ama: ${n.loves.join(', ')}</span></div>`;
+        });
+    } else {
+        html += `<div class="sdv-card">🎂 Nenhum aniversário hoje (${state.day} de ${state.season}).</div>`;
+    }
+
+    if (fest) {
+        html += `<div class="sdv-card" style="border-color:#D32F2F; background:#FFE0B2;">🎉 <strong>Festival Hoje:</strong> ${fest}</div>`;
+    }
+
+    if (isTravellingCart) {
+        html += `<div class="sdv-card">🐖 <strong>Carrinho de Viagem</strong> na Floresta Cinzaseiva (até as 20h)!</div>`;
+    }
+
+    if (isQueenOfSauce) {
+        html += `<div class="sdv-card">📺 <strong>A Rainha do Molho</strong> passando na TV hoje! Aprenda uma receita.</div>`;
+    }
+
+    document.getElementById('today-summary').innerHTML = html;
+
+    // Tarefas Diárias
+    let tasksHtml = '';
+    Object.keys(state.dailyTasks).forEach(task => {
+        const done = state.dailyTasks[task];
+        tasksHtml += `
+        <div class="check-item ${done ? 'done' : ''}" onclick="toggleDailyTask('${task}')">
+            <span>${task}</span>
+            <div class="checkbox-ui">${done ? '✔' : ''}</div>
+        </div>`;
+    });
+    document.getElementById('daily-tasks').innerHTML = tasksHtml;
+}
+
+function toggleDailyTask(task) {
+    state.dailyTasks[task] = !state.dailyTasks[task];
+    saveState();
+    renderToday();
+}
+
+// ABA 2: ALDEÕES
+function renderNPCs() {
+    const query = document.getElementById('npcSearch').value.toLowerCase();
+    const filtered = DB.npcs.filter(n => 
+        n.name.toLowerCase().includes(query) || 
+        n.loves.some(l => l.toLowerCase().includes(query))
+    );
+
+    document.getElementById('npc-list').innerHTML = filtered.map(n => `
+        <div class="sdv-card">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <strong style="font-size:17px;">${n.name}</strong>
+                <span class="badge">🎂 ${n.bday.replace('-', ' Dia ')}</span>
+            </div>
+            <div style="margin: 6px 0;">
+                ${n.loves.map(item => `<span class="badge love">❤️ ${item}</span>`).join('')}
+            </div>
+            <div style="font-size:13px; color:var(--text-muted);">📍 <strong>Rotina:</strong> ${n.schedule}</div>
+        </div>
+    `).join('');
+}
+
+// ABA 3: CENTRO COMUNITÁRIO
+function renderCC() {
+    let total = 0;
+    let completed = 0;
+
+    const html = DB.bundles.map(b => {
+        const itemsHtml = b.items.map(item => {
+            const id = `${b.name}_${item}`;
+            total++;
+            const isDone = !!state.ccDone[id];
+            if (isDone) completed++;
+            return `
+            <div class="check-item ${isDone ? 'done' : ''}" onclick="toggleCC('${id}')">
+                <span>${item}</span>
+                <div class="checkbox-ui">${isDone ? '✔' : ''}</div>
+            </div>`;
+        }).join('');
+
+        return `
+        <div class="sdv-card">
+            <div style="font-size:12px; color:var(--text-muted); font-weight:800;">${b.room.toUpperCase()}</div>
+            <strong style="font-size:16px;">📦 Conjunto: ${b.name}</strong>
+            <div style="margin-top:6px;">${itemsHtml}</div>
+        </div>`;
+    }).join('');
+
+    const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+    document.getElementById('cc-progress').style.width = `${pct}%`;
+    document.getElementById('cc-percentage').textContent = `${completed}/${total} Itens Entregues (${pct}%)`;
+    document.getElementById('cc-list').innerHTML = html;
+}
+
+function toggleCC(id) {
+    state.ccDone[id] = !state.ccDone[id];
+    saveState();
+    renderCC();
+}
+
+// ABA 4: PESCA
+function setFishFilter(mode) {
+    fishFilterMode = mode;
+    renderFish();
+}
+
+function renderFish() {
+    const query = document.getElementById('fishSearch').value.toLowerCase();
+    const list = DB.fish.filter(f => {
+        const matchesQuery = f.name.toLowerCase().includes(query) || f.loc.toLowerCase().includes(query);
+        if (!matchesQuery) return false;
+        if (fishFilterMode === 'now') {
+            const seasonMatch = f.seasons.includes(state.season);
+            const weatherMatch = f.weather === "Qualquer" || f.weather === state.weather;
+            return seasonMatch && weatherMatch;
+        }
+        return true;
+    });
+
+    if (list.length === 0) {
+        document.getElementById('fish-list').innerHTML = `<div class="sdv-card">Nenhum peixe encontrado para este filtro.</div>`;
+        return;
+    }
+
+    document.getElementById('fish-list').innerHTML = list.map(f => `
+        <div class="sdv-card">
+            <div style="display:flex; justify-content:space-between;">
+                <strong style="font-size:16px;">🐟 ${f.name}</strong>
+                <span class="badge gold">💰 ${f.price}</span>
+            </div>
+            <div style="margin-top:4px; font-size:13px;">
+                📍 <strong>Local:</strong> ${f.loc} | ⏰ <strong>Horário:</strong> ${f.time}
+            </div>
+            <div style="margin-top:4px;">
+                <span class="badge season">${f.seasons.join(', ')}</span>
+                <span class="badge">${f.weather === 'Chuva' ? '🌧️ Apenas Chuva' : (f.weather === 'Sol' ? '☀️ Apenas Sol' : '⛅ Qualquer Clima')}</span>
+            </div>
+        </div>
+    `).join('');
+}
+
+// ABA 5: LAVOURAS
+function renderCrops() {
+    const crops = DB.crops.filter(c => c.season === state.season);
+    const daysLeft = 28 - state.day;
+
+    document.getElementById('crops-list').innerHTML = crops.map(c => {
+        const canGrow = c.days <= daysLeft;
+        const harvestDay = state.day + c.days;
+        return `
+        <div class="sdv-card" style="border-left: 6px solid ${canGrow ? '#388E3C' : '#D32F2F'};">
+            <div style="display:flex; justify-content:space-between;">
+                <strong style="font-size:16px;">🌱 ${c.name}</strong>
+                <span class="badge gold">${c.profit}</span>
+            </div>
+            <div style="font-size:13px; margin-top:4px;">
+                ⏳ Crescimento: <strong>${c.days} dias</strong> ${c.regrow ? `(Rebrota a cada ${c.regrow}d)` : ''}
+            </div>
+            <div style="font-size:13px; margin-top:4px; font-weight:800; color:${canGrow ? '#2E7D32' : '#C62828'};">
+                ${canGrow ? `✔ Dá tempo! Colheita no Dia ${harvestDay}.` : `✖ Não dá tempo nesta estação (Faltam ${daysLeft} dias).`}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+// NAVEGAÇÃO ENTRE ABAS
+function switchTab(tabId, btn) {
+    document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
+    document.getElementById(`tab-${tabId}`).classList.add('active');
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+init();
+</script>
+</body>
+</html>
